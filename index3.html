@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>ระบบบริหารจัดการเหตุ</title>
+
+<style>
+body { font-family: Arial; background:#f4f6f9; margin:20px; }
+.section { margin-bottom:40px; }
+.card { background:#ffffff; padding:18px; margin:15px 0; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+label { font-weight:bold; display:block; margin-top:10px; }
+input, select { width:100%; padding:8px; margin-top:4px; }
+button { padding:8px 14px; margin:6px 4px 0 0; border:none; border-radius:6px; cursor:pointer; }
+.green { background:#28a745; color:#fff; }
+.blue { background:#007bff; color:#fff; }
+.red { background:#dc3545; color:#fff; }
+.status { font-weight:bold; margin-top:10px; }
+hr { margin:25px 0; }
+.small { font-size:13px; color:#666; }
+</style>
+</head>
+
+<body>
+
+<h1>ระบบบริหารจัดการเหตุ</h1>
+
+<!-- ศูนย์วิทยุ -->
+<div class="section">
+<h2>ศูนย์วิทยุ</h2>
+
+<label>ข้อมูลเหตุ</label>
+<input id="r_info">
+
+<label>สถานที่เกิดเหตุ</label>
+<input id="r_position">
+
+<label>ชื่อผู้แจ้ง</label>
+<input id="r_name">
+
+<label>เบอร์โทรผู้แจ้ง</label>
+<input id="r_phone">
+
+<label>เวลารับแจ้ง</label>
+<input id="r_time">
+
+<label>รายละเอียดเหตุ</label>
+<input id="r_detail">
+
+<button class="green" onclick="createCase()">บันทึกเหตุ</button>
+
+<hr>
+<h3>รายการเหตุทั้งหมด</h3>
+<div id="radioCases"></div>
+</div>
+
+<!-- เจ้าหน้าที่ -->
+<div class="section">
+<h2>แผงควบคุมเจ้าหน้าที่</h2>
+<div id="officerCases"></div>
+</div>
+
+<script>
+
+let cases = [];
+
+function createCase(){
+  let confirmCode = prompt("กรอกรหัสยืนยันศูนย์วิทยุ");
+  if(confirmCode !== "2520"){
+    alert("รหัสไม่ถูกต้อง");
+    return;
+  }
+
+  cases.push({
+    info:r_info.value,
+    position:r_position.value,
+    name:r_name.value,
+    phone:r_phone.value,
+    time:r_time.value,
+    detail:r_detail.value,
+    receiver:"",
+    status:"รอมอบหมายงาน"
+  });
+
+  renderAll();
+}
+
+function renderAll(){
+  renderRadio();
+  renderOfficer();
+}
+
+function renderRadio(){
+  let box=document.getElementById("radioCases");
+  box.innerHTML="";
+
+  cases.forEach((c,i)=>{
+    box.innerHTML+=`
+    <div class="card">
+      <label>ข้อมูลเหตุ</label>${c.info}<br><br>
+      <label>สถานที่</label>${c.position}<br><br>
+      <label>ผู้แจ้ง</label>${c.name}<br>
+      <label>เบอร์โทร</label>${c.phone}<br>
+      <label>เวลารับแจ้ง</label>${c.time}<br><br>
+      <label>รายละเอียด</label>${c.detail}<br><br>
+
+      <div class="small">เจ้าหน้าที่รับผิดชอบ: ${c.receiver || "-"}</div>
+      <div class="status">สถานะ: ${c.status}</div>
+
+      ${
+        c.status==="รอการยืนยันปิดงานจากศูนย์"
+        ? `<button class="green" onclick="confirmFinish(${i})">ยืนยันปิดงาน</button>`
+        : ""
+      }
+    </div>
+    `;
+  });
+}
+
+function renderOfficer(){
+  let box=document.getElementById("officerCases");
+  box.innerHTML="";
+
+  cases.forEach((c,i)=>{
+    box.innerHTML+=`
+    <div class="card">
+      <strong>${c.info}</strong><br>
+      สถานะ: ${c.status}<br><br>
+
+      ${
+        c.status==="รอมอบหมายงาน"
+        ? `
+        <label>ชื่อเจ้าหน้าที่</label>
+        <input id="name${i}">
+        <label>รหัสเจ้าหน้าที่</label>
+        <input id="id${i}">
+        <label>ตำแหน่ง</label>
+        <select id="role${i}">
+          <option value="">เลือกตำแหน่ง</option>
+          <option value="2520">ศูนย์วิทยุ</option>
+          <option value="1110">หัวหน้าชุด</option>
+          <option value="4520">เจ้าหน้าที่</option>
+          <option value="11420">ฝ่ายบริหาร</option>
+        </select>
+        <label>รหัสยืนยันตำแหน่ง</label>
+        <input id="code${i}">
+        <button class="green" onclick="accept(${i})">รับงาน</button>
+        `
+        : ""
+      }
+
+      ${
+        c.status==="รับงานแล้ว"
+        ? `
+        <button class="blue" onclick="arrived(${i})">ถึงที่เกิดเหตุ</button>
+        <button class="red" onclick="cancelCase(${i})">ยกเลิกงาน</button>
+        `
+        : ""
+      }
+
+      ${
+        c.status==="ถึงที่เกิดเหตุแล้ว"
+        ? `
+        <button class="green" onclick="requestClose(${i})">ขอปิดงาน</button>
+        `
+        : ""
+      }
+
+    </div>
+    `;
+  });
+}
+
+function accept(i){
+  let role=document.getElementById("role"+i).value;
+  let code=document.getElementById("code"+i).value;
+  let name=document.getElementById("name"+i).value;
+
+  if(role!==code || role===""){
+    alert("รหัสยืนยันตำแหน่งไม่ถูกต้อง");
+    return;
+  }
+
+  cases[i].receiver=name;
+  cases[i].status="รับงานแล้ว";
+  renderAll();
+}
+
+function arrived(i){
+  cases[i].status="ถึงที่เกิดเหตุแล้ว";
+  renderAll();
+}
+
+function cancelCase(i){
+  cases[i].status="ยกเลิกงาน";
+  renderAll();
+}
+
+function requestClose(i){
+  cases[i].status="รอการยืนยันปิดงานจากศูนย์";
+  renderAll();
+}
+
+function confirmFinish(i){
+  let code = prompt("กรอกรหัสศูนย์วิทยุเพื่อยืนยันปิดงาน");
+  if(code==="2520"){
+    cases[i].status="ปิดงานสำเร็จ";
+    renderAll();
+  } else {
+    alert("รหัสไม่ถูกต้อง");
+  }
+}
+
+</script>
+</body>
+</html>
